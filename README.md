@@ -64,4 +64,16 @@ Then create a new apfs volume
 
 On cellular models this would be `disk1s7` and on wifi it's `disk1s6`
 
+Now mount it: `mount_apfs /dev/disk1s(6-7) /mnt8`
+
+Upload iPadOS 16 root filesystem to `/mnt8/fs.dmg`
+
+After this, unmount `/mnt8`, set `nvram auto-boot=false`, reboot
+
+
+
+
+
+
+
 `mount_filesystems`
