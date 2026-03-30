@@ -1,0 +1,5 @@
+PROP ADD event_name-gpio17 616300 device-tree/arm-io/i2c0/pmu
+PROP ADD event_name-hold 6d637528686f6c642900 device-tree/arm-io/i2c0/pmu
+PROP SET compatible 706d752c643231383600 device-tree/arm-io/i2c0/pmu
+PROP SET interrupts 4300000001000000 device-tree/arm-io/i2c0/pmu
+PROP ADD event_name-menu 6d6375286d656e752900 device-tree/arm-io/i2c0/pmu
