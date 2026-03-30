@@ -70,6 +70,9 @@ Upload iPadOS 16 root filesystem to `/mnt8/fs.dmg`
 
 After this, unmount `/mnt8`, set `nvram auto-boot=false`, reboot
 
+Now boot SSH ramdisk again and then run apfs_invert
+
+`/System/Library/Filesystems/apfs.fs/apfs_invert -d /dev/disk0s1 -s 6 -n fs.dmg`
 
 
 
