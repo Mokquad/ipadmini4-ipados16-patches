@@ -76,4 +76,9 @@ After this, unmount `/mnt8`, set `nvram auto-boot=false`, reboot
 
 
 
-`mount_filesystems`
+
+
+
+
+
+
