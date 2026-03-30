@@ -1,4 +1,4 @@
-# ipadmini4-ipados16
+# iPad mini 4 on iPadOS 16
 
 Install iPadOS 16 on iPad mini 4
 
