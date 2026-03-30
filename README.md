@@ -16,6 +16,8 @@ If it is not on iPadOS 15 already, update it to the latest version of 15.
 
 Download an iPad 5 16.0 beta 2 IPSW and iPad mini 4 15.8.7 IPSW
 
+Device must already be activated (because of potential activation issues on iPadOS 16)
+
 Tools that are used here (this guide assumes you have them)
 
 # Step 1
