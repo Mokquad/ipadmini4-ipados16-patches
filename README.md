@@ -4,6 +4,10 @@ Install iPadOS 16 on iPad mini 4
 
 If you can't understand this guide in full, it's not for you
 
+# Credits
+
+[Nick Chan](https://github.com/asdfugil) - iPad 6 iPadOS 18 guide, which some of the steps are based from
+
 # Requirements
 
 Your iPad mini 4 must already be on iPadOS 15
@@ -20,3 +24,34 @@ Download tvOS 16.0 beta 2 kernelcache (this is the only kernel for A8 that would
 
 `./pzb -g kernelcache.release.j42d https://updates.cdn-apple.com/2022SummerSeed/fullrestores/012-30801/8496544E-3794-4361-AF13-F874BF7378AC/AppleTV5,3_16.0_20J5319h_Restore.ipsw`
 
+Then extract iPadOS 15 IPSW and iPadOS 16 IPSW
+
+Get `ddt.py` from [SundanceInH2A](https://github.com/NyanSatan/SundanceInH2A), make sure to have the latest version of python3 installed.
+
+Now extract iPadOS 15 DeviceTree, `j96ap` for Wi-Fi only models, `j97ap` for Cellular models.
+
+`./img4 -i 15.x-ipsw/Firmware/all_flash/DeviceTree.j9(6-7)ap.im4p -o devicetree.raw`
+
+Now patch it with `ddt.py` and apply DeviceTree diff
+
+`python3 ddt.py devicetree.raw devicetree.patched devicetree.diff`
+
+Now create an im4p with it
+
+`./img4 -i devicetree.patched -o DeviceTree.im4p -A -T dtre` (localboot reasons?)
+
+# Step 2
+
+Installing the OS
+
+Get funny SSHRD_Script fork that makes 16.0b2 SSH ramdisk (https://github.com/pwnerblu/SSHRD_Script)
+
+`./sshrd.sh 16.0`
+
+`./sshrd.sh boot`
+
+`./sshrd.sh ssh`
+
+In the SSH session, mount filesystems
+
+`mount_filesystems`
