@@ -57,3 +57,11 @@ Get funny SSHRD_Script fork that makes 16.0b2 SSH ramdisk (https://github.com/pw
 In the SSH session, mount filesystems
 
 `mount_filesystems`
+
+Then create a new apfs volume
+
+`/sbin/newfs_apfs -A -D -o role=r -v Xystem /dev/disk0s1`
+
+On cellular models this would be `disk1s7` and on wifi it's `disk1s6`
+
+`mount_filesystems`
