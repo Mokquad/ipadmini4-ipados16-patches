@@ -114,7 +114,59 @@ Now install the cryptexes.
 
 `mv /mnt8/System/Cryptexes/OS/System/Library/Caches/com.apple.dyld /mnt8/System/Library/Caches/com.apple.dyld`
 
+Reboot out of the SSH ramdisk
 
+Now boot iPadOS 15 rootless with palera1n. `palera1n -l -V`
+
+Then connect to palera1n internal SSH, password is `alpine`. 
+
+`ssh -o 'ProxyCommand=inetcat 44' -o 'UserKnownHostsFile /dev/null' -o 'StrictHostKeyChecking no' root@palera1n`
+
+Then fix up /var (note that this does use iPadOS 15 var).
+
+`mount_apfs /dev/disk0s1s(6-7) /cores/fs/fake`
+
+`rm -rf /private/var/staged_system_apps`
+
+`mv /cores/fs/fake/private/var/staged_system_apps /private/var`
+
+`cat /private/preboot/active`
+
+Note the boot manifest hash.
+
+Now disable booting to iPadOS 15.
+
+`cd /private/preboot/[boot manifest hash]/System/Library/Caches/com.apple.kernelcaches`
+
+`mv kernelcache kernelcache.bak`
+
+`nvram auto-boot=false`
+
+Now reboot.
+
+`reboot`
+
+Now, convert onboard blobs to im4m, make patched boot files, also patch AMFI in 16.0 kernelcache, etc.
+
+After making the boot files, pwn device with `gaster` then boot it.
+
+`irecovery -f iBSS.img4`
+
+`irecovery -f iBEC.img4`
+
+`irecovery -f DeviceTree.img4`
+
+`irecovery -c devicetree`
+
+`irecovery -f Trustcache.img4`
+
+`irecovery -c firmware`
+
+`irecovery -f kernel.img4`
+
+`irecovery -c bootx`
+
+Assuming you've did everything correctly, iPadOS 16 should now boot!
 
 
 
