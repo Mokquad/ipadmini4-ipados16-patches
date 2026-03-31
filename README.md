@@ -94,11 +94,19 @@ Take note of the mount points, and use `mount_apfs` and mount them as ro. Mount 
 
 Now install the cryptexes.
 
-```cd /mnt3```
+`rm -rf /mnt8/System/Cryptexes/OS`
 
-```find . -path './System/Library/Caches/com.apple.dyld' -prune -o -exec cp -a {} /mnt8/System/Cryptexes/OS/ \;```
+`rm -rf /mnt8/System/Cryptexes/App`
 
+`mkdir -p /mnt8/System/Cryptexes/OS`
 
+`mkdir -p /mnt8/System/Cryptexes/App`
+
+`cd /mnt3`
+
+`find . -path './System/Library/Caches/com.apple.dyld' -prune -o -exec cp -a {} /mnt8/System/Cryptexes/OS/ \;`
+
+`cp -av /mnt4/* /mnt8/System/Cryptexes/App/`
 
 
 
