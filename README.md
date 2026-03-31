@@ -56,6 +56,8 @@ Get funny SSHRD_Script fork that makes 16.0b2 SSH ramdisk (https://github.com/pw
 
 `./sshrd.sh boot`
 
+`./sshrd.sh dump-blobs` (dump onboard blobs, we'll need them later)
+
 `./sshrd.sh ssh`
 
 In the SSH session, mount filesystems
