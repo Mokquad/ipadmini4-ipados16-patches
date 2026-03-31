@@ -70,9 +70,15 @@ Upload iPadOS 16 root filesystem to `/mnt8/fs.dmg`
 
 After this, unmount `/mnt8`, set `nvram auto-boot=false`, reboot
 
-Now boot SSH ramdisk again and then run apfs_invert
+Now boot SSH ramdisk again
 
-`/System/Library/Filesystems/apfs.fs/apfs_invert -d /dev/disk0s1 -s 6 -n fs.dmg`
+Mount the iOS 16 system partition again, and `hdik /mnt8/fs.dmg`
+
+Take note of the mount points.
+
+Mount fs.dmg: `mount_apfs -o ro /dev/disk6s1 /mnt2`
+
+Then copy over iOS 16 rootfs to system partition: `cp -av /mnt2/* /mnt8`
 
 
 
