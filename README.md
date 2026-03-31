@@ -2,7 +2,11 @@
 
 Install iPadOS 16 on iPad mini 4
 
-If you can't understand this guide in full, it's not for you
+If you can't understand this guide in full, it's not for you.
+
+There is a very high risk of bricking your device doing this. This is at your own risk.
+
+I WILL NOT PROVIDE ANY SUPPORT FOR THIS, AFTER THIS POINT, IT IS FOR YOU TO FIGURE OUT YOURSELF.
 
 # Credits
 
