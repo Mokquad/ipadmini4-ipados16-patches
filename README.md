@@ -92,7 +92,10 @@ Then run hdik and get mount points for those: `hdik /mnt8/cryptexos.dmg` and `hd
 
 Take note of the mount points, and use `mount_apfs` and mount them as ro. Mount cryptexOS to `/mnt3` and app cryptex to `/mnt4`
 
+Now install the cryptexes.
 
+``cd /mnt3
+find . -path './System/Library/Caches/com.apple.dyld' -prune -o -exec cp -a {} /mnt8/System/Cryptexes/OS/ \;``
 
 
 
