@@ -84,6 +84,18 @@ Mount fs.dmg: `mount_apfs -o ro /dev/disk6s1 /mnt2`
 
 Then copy over iOS 16 rootfs to system partition: `cp -av /mnt2/* /mnt8`
 
+Now delete temporary fs dmg: `rm -rf /mnt8/fs.dmg`
+
+Now send over system and app cryptexes to /mnt8.
+
+Then run hdik and get mount points for those: `hdik /mnt8/cryptexos.dmg` and `hdik /mnt8/cryptexapp.dmg`
+
+Take note of the mount points, and use `mount_apfs` and mount them as ro. Mount cryptexOS to `/mnt3` and app cryptex to `/mnt4`
+
+
+
+
+
 
 
 
