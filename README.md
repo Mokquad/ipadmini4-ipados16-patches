@@ -108,9 +108,11 @@ Now install the cryptexes.
 
 `cp -av /mnt4/* /mnt8/System/Cryptexes/App/`
 
+`rm -rf /mnt8/cryptexos.dmg` 
 
+`rm -rf /mnt8/cryptexapp.dmg`
 
-
+`mv /mnt8/System/Cryptexes/OS/System/Library/Caches/com.apple.dyld /mnt8/System/Library/Caches/com.apple.dyld`
 
 
 
