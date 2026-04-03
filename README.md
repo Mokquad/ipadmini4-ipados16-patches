@@ -8,6 +8,8 @@ There is a very high risk of bricking your device doing this. This is at your ow
 
 I WILL NOT PROVIDE ANY SUPPORT FOR THIS, AFTER THIS POINT, IT IS FOR YOU TO FIGURE OUT YOURSELF.
 
+## Make SURE TO FULLY CHARGE UP THE IPAD BEFORE PROCEEDING
+
 # Credits
 
 [Nick Chan](https://github.com/asdfugil) - iPad 6 iPadOS 18 guide, which some of the steps are based from
