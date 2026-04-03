@@ -202,7 +202,7 @@ After making the boot files, pwn device with `gaster` then boot it.
 
 Assuming you've did everything correctly, iPadOS 16 should now boot!
 
-
+Note that it will use iPadOS 15 wallpaper by default, though you can download 16 wallpapers in Settings after setting the device up
 
 
 
