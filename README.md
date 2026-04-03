@@ -60,9 +60,9 @@ Get funny SSHRD_Script fork that makes 16.0b2 SSH ramdisk (https://github.com/pw
 
 `./sshrd.sh ssh`
 
-In the SSH session, mount filesystems
+In the SSH session, mount root filesystem of iOS 15
 
-`mount_filesystems`
+`mount_apfs /dev/disk1s1 /mnt1`
 
 Then create a new apfs volume
 
@@ -74,11 +74,9 @@ Now mount it: `mount_apfs /dev/disk1s(6-7) /mnt8`
 
 Upload iPadOS 16 root filesystem to `/mnt8/fs.dmg`
 
-After this, unmount `/mnt8`, set `nvram auto-boot=false`, reboot
+After this, set `nvram auto-boot=false`
 
-Now boot SSH ramdisk again
-
-Mount the iOS 16 system partition again, and `hdik /mnt8/fs.dmg`
+Now do `hdik /mnt8/fs.dmg`
 
 Take note of the mount points.
 
@@ -88,7 +86,7 @@ Then copy over iOS 16 rootfs to system partition: `cp -av /mnt2/* /mnt8`
 
 Now delete temporary fs dmg: `rm -rf /mnt8/fs.dmg`
 
-Now send over system and app cryptexes to /mnt8.
+Now send over system and app cryptexes to /mnt8. (the smallest one is the app cryptex)
 
 Then run hdik and get mount points for those: `hdik /mnt8/cryptexos.dmg` and `hdik /mnt8/cryptexapp.dmg`
 
@@ -114,6 +112,16 @@ Now install the cryptexes.
 
 `mv /mnt8/System/Cryptexes/OS/System/Library/Caches/com.apple.dyld /mnt8/System/Library/Caches/com.apple.dyld`
 
+Add iPad mini 4 specific components:
+
+`find /mnt1 -iregex '.*j9[6-7].*' -type f -exec /bin/sh -c 'dirname="$(echo "{}" | sed -E '\''s|^/mnt1(/.+)/.+$|\1|'\'')"; filename="$(echo "{}" | sed -E '\''s|/mnt1/.+/(.+)$|\1|'\'')"; mkdir -p "/mnt8/${dirname}"; cp -an "{}" "/mnt8/${dirname}/${filename}";' \;`
+
+Downgrade files:
+
+`cp -a /mnt1/Library/Wallpaper /mnt8/Library` (this part makes it use iPadOS 15 wallpaper by default)
+
+`cp -a /mnt1/Library/Audio/Plug-Ins /mnt8/Library/Audio`
+
 Reboot out of the SSH ramdisk
 
 Now boot iPadOS 15 rootless with palera1n. `palera1n -l -V`
@@ -132,13 +140,11 @@ Then fix up /var (note that this does use iPadOS 15 var).
 
 `cat /private/preboot/active`
 
-Note the boot manifest hash.
-
 Now disable booting to iPadOS 15.
 
-`cd /private/preboot/[boot manifest hash]/System/Library/Caches/com.apple.kernelcaches`
+`cd /private/preboot/*/System/Library/Caches/com.apple.kernelcaches`
 
-`mv kernelcache kernelcache.bak`
+`mv kernelcache kernelcache.bak` (you can skip this step, though you should at least do nvram auto-boot=false)
 
 `nvram auto-boot=false`
 
@@ -146,7 +152,35 @@ Now reboot.
 
 `reboot`
 
+Boot back into SSH ramdisk, `mount_filesystems`, then upload the `disabled.plist` from this repo into `/mnt2/db/com.apple.xpc.launchd/`
+
+It's important that we do this, otherwise SpringBoard won't load. Some daemons will be broken anyways.
+
+Now reboot out of the SSH ramdisk and proceed to Step 3!
+
 Now, convert onboard blobs to im4m, make patched boot files, also patch AMFI in 16.0 kernelcache, etc.
+
+# Step 3
+
+Creating boot files.
+
+There is an automatic way to do this, use the `bootcreation.sh` script in this repo instead of these, but for manual instructions follow:
+
+Patch iOS 15 iBSS with `iBoot64Patcher`, also make sure to create img4 with the im4m from your dumped blob
+
+Patch iOS 15 iBEC too with `iBoot64Patcher`, but set bootargs `-v wdt=-1 rd=disk1s6`, also create patched iBEC as img4 with im4m from dumped blob
+
+Sign patched DeviceTree.im4p with im4m from your blob, set tag as rdtr
+
+Extract `kernelcache.release.j42d` to kernel.raw
+
+Now use `Kernel64Patcher` and patch it with these args: `./Kernel64Patcher kernel.raw kernel.patch -e -o -h`
+
+After Kernel64Patcher, patch AMFI: `./KPlooshFinder kernel.patch kernel.patched`
+
+Now make a patch file with `kerneldiff`, then make an img4 and apply kernel patches.
+
+Then, make an img4 of trustcache, with rtsc tag. It can be any trustcache, as amfi is patched here.
 
 After making the boot files, pwn device with `gaster` then boot it.
 
