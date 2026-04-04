@@ -124,6 +124,12 @@ Downgrade files:
 
 `cp -a /mnt1/Library/Audio/Plug-Ins /mnt8/Library/Audio`
 
+Delete a couple of migrators (this is so the first boot time is shorter):
+
+`rm -rf /mnt8/System/Library/DataClassMigrators/PassbookDataMigrator.migrator/`
+
+`rm -rf /mnt8/System/Library/DataClassMigrators/CoreLocationMigrator.migrator/`
+
 Reboot out of the SSH ramdisk
 
 Now boot iPadOS 15 rootless with palera1n. `palera1n -l -V`
