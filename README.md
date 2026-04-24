@@ -1,6 +1,6 @@
 # iPad mini 4 on iPadOS 16
 
-Install iPadOS 16 on iPad mini 4
+Install iPadOS 16 on iPad mini 4 (this is actually really cursed, this INVOLVES downgrading a ton of files and even using a 15 kernel)
 
 If you can't understand this guide in full, it's not for you.
 
