@@ -1,6 +1,6 @@
 # iPad mini 4 on iPadOS 16
 
-Install iPadOS 16 on iPad mini 4 (this is actually really cursed, this INVOLVES downgrading a ton of files and even using a 15 kernel)
+Install iPadOS 16 on iPad mini 4 (this is actually really cursed, this INVOLVES using AppleTV stuff)
 
 If you can't understand this guide in full, it's not for you.
 
@@ -118,17 +118,19 @@ Add iPad mini 4 specific components:
 
 `find /mnt1 -iregex '.*j9[6-7].*' -type f -exec /bin/sh -c 'dirname="$(echo "{}" | sed -E '\''s|^/mnt1(/.+)/.+$|\1|'\'')"; filename="$(echo "{}" | sed -E '\''s|/mnt1/.+/(.+)$|\1|'\'')"; mkdir -p "/mnt8/${dirname}"; cp -an "{}" "/mnt8/${dirname}/${filename}";' \;`
 
+`cp -av /mnt1/usr/share/firmware/wifi /mnt8/usr/share/firmware` (Copy mini 4 Wi-Fi files)
+
 Downgrade files:
 
-`cp -a /mnt1/Library/Wallpaper /mnt8/Library` (this part makes it use iPadOS 15 wallpaper by default)
+`mv /mnt8/Library/Wallpaper{,.bak}`
+
+`cp -a /mnt1/Library/Wallpaper /mnt8/Library` (this part makes it use iPadOS 15 wallpaper by default). You can download 16.0 wallpaper in Settings after booting into iPadOS 16
+
+`mv /mnt8/Library/Audio/Plug-Ins{,.bak}`
 
 `cp -a /mnt1/Library/Audio/Plug-Ins /mnt8/Library/Audio`
 
-Delete a couple of migrators (this is so the first boot time is shorter):
-
-`rm -rf /mnt8/System/Library/DataClassMigrators/PassbookDataMigrator.migrator/`
-
-`rm -rf /mnt8/System/Library/DataClassMigrators/CoreLocationMigrator.migrator/`
+From the Apple TV ipsw, upload a few daemons from tvOS 16.0 beta 2 to the iPadOS 16.0 filesystem
 
 Reboot out of the SSH ramdisk
 
