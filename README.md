@@ -118,9 +118,11 @@ Add iPad mini 4 specific components:
 
 `find /mnt1 -iregex '.*j9[6-7].*' -type f -exec /bin/sh -c 'dirname="$(echo "{}" | sed -E '\''s|^/mnt1(/.+)/.+$|\1|'\'')"; filename="$(echo "{}" | sed -E '\''s|/mnt1/.+/(.+)$|\1|'\'')"; mkdir -p "/mnt8/${dirname}"; cp -anv "{}" "/mnt8/${dirname}/${filename}";' \;`
 
-`cp -av /mnt1/usr/share/firmware/wifi /mnt8/usr/share/firmware` (Copy mini 4 Wi-Fi files)
-
 Downgrade files:
+
+`mv /mnt8/usr/share/firmware/wifi{,.bak}`
+
+`cp -av /mnt1/usr/share/firmware/wifi /mnt8/usr/share/firmware`
 
 `mv /mnt8/Library/Wallpaper{,.bak}`
 
