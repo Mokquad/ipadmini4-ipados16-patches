@@ -132,7 +132,7 @@ Downgrade files:
 
 `cp -a /mnt1/Library/Audio/Plug-Ins /mnt8/Library/Audio`
 
-From the Apple TV ipsw, upload a few daemons from tvOS 16.0 beta 2 to the iPadOS 16.0 filesystem
+From the Apple TV ipsw, upload a few daemons from tvOS 16.0 beta 2 to the iPadOS 16.0 filesystem. `mtmergeprops`, `corecaptured`, `localizationswitcherd`
 
 Reboot out of the SSH ramdisk
 
