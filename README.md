@@ -10,7 +10,7 @@ I WILL NOT PROVIDE ANY SUPPORT FOR THIS, AFTER THIS POINT, IT IS FOR YOU TO FIGU
 
 ## Make SURE TO FULLY CHARGE UP THE IPAD BEFORE PROCEEDING
 
-# Credits
+# Thanks to
 
 [Nick Chan](https://github.com/asdfugil) - iPad 6 iPadOS 18 guide, which some of the steps are based from
 
@@ -36,17 +36,7 @@ Then extract iPadOS 15 IPSW and iPadOS 16 IPSW
 
 Get `ddt.py` from [SundanceInH2A](https://github.com/NyanSatan/SundanceInH2A), make sure to have the latest version of python3 installed.
 
-Now extract iPadOS 15 DeviceTree, `j96ap` for Wi-Fi only models, `j97ap` for Cellular models.
-
-`./img4 -i 15.x-ipsw/Firmware/all_flash/DeviceTree.j9(6-7)ap.im4p -o devicetree.raw`
-
-Now patch it with `ddt.py` and apply DeviceTree diff
-
-`python3 ddt.py devicetree.raw devicetree.patched devicetree.diff`
-
-Now create an im4p with it
-
-`./img4 -i devicetree.patched -o DeviceTree.im4p -A -T dtre` (localboot reasons?)
+Download DeviceTree.j96ap.im4p from this repo (the funny DeviceTree)
 
 # Step 2
 
