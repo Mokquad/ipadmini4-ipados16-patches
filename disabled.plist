@@ -19,7 +19,7 @@
 	<key>com.apple.siriinferenced</key>
 	<true/>
 	<key>com.apple.remotepairingdeviced</key>
-	<true/>
+	<false/>
 	<key>com.apple.mediaremoted</key>
 	<true/>
 	<key>com.apple.CommCenter</key>
