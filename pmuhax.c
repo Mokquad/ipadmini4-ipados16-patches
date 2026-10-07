@@ -25,12 +25,14 @@
  *           bit 11 is already caught by the first mask, so this is
  *           equivalent to D2207's 0x1f7ff)
  *  4. AppleD2186PMU::_setLDO special-case register  0x380 -> 0x391 (x2)
- *  5. PMU GPIO number->register map (vtable slot 0x660) made FAIL-CLOSED:
- *       returns 0xffff, so every table-driven PMU GPIO access is rejected
- *       instead of being written with D2186's (different) register map.
+ *  5. PMU GPIO number->register map (vtable slot 0x660) is replaced with the
+ *     exact native D2207 mapper in a trampoline.  The mapper returns:
+ *       GPIO 0..16 -> 0x400 + GPIO
+ *       GPIO 17..20 -> 0x413, 0x416, 0x419, 0x41c
+ *       GPIO >20 -> 0xffff
  *  6. (default) AppleD2186PMURTC / AppleD2186PMUWatchDogTimer personalities
- *     get an unmatchable provider class, so their D2186 register layout is
- *     never applied to D2207 silicon.  Use -k to keep them.
+ *     are left enabled.  This matches the known-good -k behavior; use -K to
+ *     disable them if explicitly desired.
  *  7. (default) 5 V rail boost: D2207's _setLDO ORs bits 0..1 into the shared
  *     enable register 0x84 whenever ldo15..17 (idx 14..16) is enabled.  A
  *     9-instruction trampoline in the zero-filled gap after the kext's
@@ -42,15 +44,17 @@
  *  - LDO index >= 20 (ldo21..23) is rejected: the D2186 table has no room.
  *  - The 5 V boost is set-only; D2207 also clears it when the last 5 V rail
  *    goes off (state cached in an object field whose layout differs here).
- *  - PMU GPIO functions are intentionally unavailable (see 5).
+ *  - D2207 PMU GPIO mapping is fixed, but D2207-specific backlight/WLED/LCM,
+ *    IDAC, and charger input-current code is still absent.
  *  - Backlight/WLED/LCM, IDAC, charger input-current code of D2207 is absent.
  *
  * Usage:
  *   cc -O2 -Wall -Wextra -o pmupatch_d2207 pmupatch_d2207.c
- *   ./pmupatch_d2207 [-n] [-k] [-B] [-v] in.raw [out.raw]
+ *   ./pmupatch_d2207 [-n] [-k] [-K] [-B] [-v] in.raw [out.raw]
  *
  *   -n  dry run (find and verify everything, write nothing)
- *   -k  keep the RTC and watchdog personalities enabled
+ *   -k  compatibility alias: keep RTC/watchdog personalities enabled
+ *   -K  disable the RTC/watchdog personalities (not recommended)
  *   -B  do not install the 5 V boost trampoline
  *   -v  print every patched word / byte range
  *
@@ -143,6 +147,34 @@ static const uint32_t SIG_GPIO[6] = {
 };
 #define NEW_MOV_W0_FFFF 0x529fffe0u
 #define NEW_RET         0xd65f03c0u
+
+/* Native D2207 GPIO mapper, recovered from iOS 15.8.8 AppleD2207PMU.
+ * This is 9 instructions, so it is installed in a zero-filled trampoline
+ * rather than squeezed into the original 6-instruction D2186 slot. */
+static const uint32_t D2207_GPIO_CAVE[9] = {
+    0x529fffe8u, /* mov  w8,#0xffff */
+    0x7100443fu, /* cmp  w1,#0x11 */
+    0x32160029u, /* orr  w9,w1,#0x400 */
+    0x0b01042au, /* add  w10,w1,w1,lsl #1 */
+    0x110f814au, /* add  w10,w10,#0x3e0 */
+    0x1a8a3129u, /* csel w9,w9,w10,lo */
+    0x7100503fu, /* cmp  w1,#0x14 */
+    0x1a898100u, /* csel w0,w8,w9,hi */
+    0xd65f03c0u  /* ret */
+};
+#define GPIO_CAVE_WORDS 9
+#define OFF_GPIO_CAVE   (OFF_BOOST_CAVE + 0x40u)
+
+static void die(const char *s);
+
+/* Encode an AArch64 unconditional B from one instruction VA to another. */
+static uint32_t arm64_b(uint64_t from, uint64_t to)
+{
+    int64_t d = (int64_t)to - (int64_t)from;
+    if ((d & 3) != 0 || d < -(1LL << 27) || d >= (1LL << 27))
+        die("AArch64 branch target out of range/alignment");
+    return 0x14000000u | ((uint32_t)((d >> 2) & 0x03ffffff));
+}
 
 /* 5 V boost trampoline.  Offsets are relative to the _setLDO mask anchor
  * (SIG_MASKS), which is unique.  Patch point = the "strb w8,[sp,#0x2f]" that
@@ -310,13 +342,15 @@ static size_t replace_same_len(char *b, size_t len, const char *from,
 
 int main(int argc, char **argv)
 {
-    int dry = 0, keep_rtc = 0, no_boost = 0, ai = 1;
+    int dry = 0, keep_rtc = 1, no_boost = 0, ai = 1;
 
     while (ai < argc && argv[ai][0] == '-' && argv[ai][1]) {
         if (!strcmp(argv[ai], "-n"))
             dry = 1;
         else if (!strcmp(argv[ai], "-k"))
             keep_rtc = 1;
+        else if (!strcmp(argv[ai], "-K"))
+            keep_rtc = 0;
         else if (!strcmp(argv[ai], "-B"))
             no_boost = 1;
         else if (!strcmp(argv[ai], "-v"))
@@ -328,7 +362,7 @@ int main(int argc, char **argv)
         ai++;
     }
     if (argc - ai < 1 || argc - ai > 2) {
-        fprintf(stderr, "usage: %s [-n] [-k] [-B] [-v] in.raw [out.raw]\n",
+        fprintf(stderr, "usage: %s [-n] [-k] [-K] [-B] [-v] in.raw [out.raw]\n",
                 argv[0]);
         return 2;
     }
@@ -444,14 +478,6 @@ int main(int argc, char **argv)
         else
             die("_setLDO mask signature not unique/found; refusing");
     }
-    if (n_gpio != 1) {
-        uint32_t pat[6] = { NEW_MOV_W0_FFFF, NEW_RET, SIG_GPIO[2],
-                            SIG_GPIO[3], SIG_GPIO[4], SIG_GPIO[5] };
-        if (count_words(buf, (size_t)fsz, pat, 6, NULL) != 1)
-            die("gpio map signature not unique/found; refusing");
-        printf("gpio map already fail-closed.\n");
-    }
-
     /* anchor = start of the (original or patched) mask sequence */
     size_t anchor_at = msk_at;
     if (n_msk != 1) {
@@ -460,6 +486,22 @@ int main(int argc, char **argv)
         if (count_words(buf, (size_t)fsz, pat, 6, &anchor_at) != 1)
             die("mask anchor lost");
     }
+
+    /* GPIO patch uses the same cave as the boost trampoline, +0x40. */
+    size_t gc = anchor_at + OFF_GPIO_CAVE;
+    size_t gp = gpio_at;
+    uint64_t gpio_cave_va = 0, gpio_patch_va = 0;
+    uint32_t gpio_branch = 0;
+    int gpio_done = (n_gpio == 0);
+
+    if (gc + 4 * GPIO_CAVE_WORDS > (size_t)fsz)
+        die("gpio cave outside file");
+
+    /* The cave is in the same __TEXT_EXEC region as the boost cave.  Its
+     * branch target can therefore be computed from the Mach-O VM/file
+     * mapping below; defer the actual VA derivation until segment parsing. */
+    if (n_gpio != 1)
+        gpio_done = 1;
 
     /* boost trampoline state */
     size_t bp = anchor_at + OFF_BOOST_PATCH;
@@ -482,6 +524,54 @@ int main(int argc, char **argv)
                     die("boost cave is not zero-filled; refusing");
             boost_todo = 1;
         }
+    }
+
+    /* Derive the VM address for the GPIO patch site/cave.  Both are in the
+     * same __TEXT_EXEC mapping; only the relative distance matters for B. */
+    uint64_t seg_vm = 0, seg_fo = 0, seg_fs = 0;
+    off = 32;
+    for (uint32_t i = 0; i < hdr[4]; i++) {
+        uint32_t cmd, csz;
+        memcpy(&cmd, buf + off, 4);
+        memcpy(&csz, buf + off + 4, 4);
+        if (cmd == LC_SEGMENT_64 && csz >= 72) {
+            char segname[17];
+            memcpy(segname, buf + off + 8, 16);
+            segname[16] = 0;
+            uint64_t vm, fo, vs, fs;
+            memcpy(&vm, buf + off + 24, 8);
+            memcpy(&vs, buf + off + 32, 8);
+            memcpy(&fo, buf + off + 40, 8);
+            memcpy(&fs, buf + off + 48, 8);
+            if (!strcmp(segname, "__PLK_TEXT_EXEC") &&
+                gp >= (size_t)fo && gp < (size_t)(fo + fs) &&
+                gc >= (size_t)fo && gc < (size_t)(fo + fs)) {
+                seg_vm = vm; seg_fo = fo; seg_fs = fs;
+                (void)vs;
+                break;
+            }
+        }
+        off += csz;
+    }
+    if (!seg_fs)
+        die("could not map GPIO patch/cave into __PLK_TEXT_EXEC");
+    gpio_patch_va = seg_vm + (gp - (size_t)seg_fo);
+    gpio_cave_va = seg_vm + (gc - (size_t)seg_fo);
+    gpio_branch = arm64_b(gpio_patch_va, gpio_cave_va);
+
+    if (gpio_done) {
+        if (rd32(buf + gp) != gpio_branch)
+            die("gpio patch present but branch instruction unexpected");
+        for (int i = 0; i < GPIO_CAVE_WORDS; i++)
+            if (rd32(buf + gc + 4 * i) != D2207_GPIO_CAVE[i])
+                die("gpio patch present but cave content unexpected");
+    } else {
+        for (size_t i = 0; i < 6; i++)
+            if (rd32(buf + gp + 4 * i) != SIG_GPIO[i])
+                die("gpio patch point signature changed; refusing");
+        for (size_t i = 0; i < 4 * GPIO_CAVE_WORDS; i++)
+            if (buf[gc + i])
+                die("gpio cave is not zero-filled; refusing");
     }
 
     if (plist_done && tab_done && n_msk == 0 && n_gpio == 0 &&
@@ -558,14 +648,23 @@ int main(int argc, char **argv)
         printf("[3][4] _setLDO already patched\n");
     }
 
-    /* ---- apply: gpio map fail-closed ---- */
+    /* ---- apply: exact native D2207 GPIO mapper trampoline ---- */
     if (n_gpio == 1) {
-        wr32(buf + gpio_at + 0, NEW_MOV_W0_FFFF);
-        wr32(buf + gpio_at + 4, NEW_RET);
-        printf("[5] PMU GPIO map @file+0x%zx -> fail-closed (returns 0xffff)\n",
-               gpio_at);
+        for (int i = 0; i < GPIO_CAVE_WORDS; i++)
+            wr32(buf + gc + 4 * i, D2207_GPIO_CAVE[i]);
+        /* B preserves x30, so the cave's RET returns directly to the native
+         * caller after the original six-instruction mapper slot. */
+        wr32(buf + gp + 0, gpio_branch);
+        for (int i = 1; i < 6; i++)
+            wr32(buf + gp + 4 * i, 0xd503201fu); /* nop */
+        printf("[5] PMU GPIO map @file+0x%zx -> native D2207 trampoline @file+0x%zx\n",
+               gp, gc);
+        if (verbose)
+            printf("      VA 0x%016llx -> 0x%016llx, branch 0x%08x\n",
+                   (unsigned long long)gpio_patch_va,
+                   (unsigned long long)gpio_cave_va, gpio_branch);
     } else {
-        printf("[5] gpio map already fail-closed\n");
+        printf("[5] native D2207 GPIO mapper trampoline already installed\n");
     }
 
     /* ---- apply: 5 V boost trampoline ---- */
@@ -592,6 +691,11 @@ int main(int argc, char **argv)
     }
     if (count_str(ent, elen, M_NEW) != 1)
         die("post-patch: pmu,d2207 match missing");
+    if (rd32(buf + gp) != gpio_branch)
+        die("post-patch: GPIO branch verification failed");
+    for (int i = 0; i < GPIO_CAVE_WORDS; i++)
+        if (rd32(buf + gc + 4 * i) != D2207_GPIO_CAVE[i])
+            die("post-patch: native D2207 GPIO cave verification failed");
     if (!no_boost && (rd32(buf + bp) != BOOST_BRANCH_TO_CAVE ||
                       rd32(buf + bc + 4 * (CAVE_WORDS - 1)) !=
                           BOOST_CAVE[CAVE_WORDS - 1]))
@@ -599,8 +703,8 @@ int main(int argc, char **argv)
     printf("Verified: pmu,d2207 match, D2207 LDO table, masks, gpio guard%s.\n",
            no_boost ? "" : ", 5V boost");
 
-    printf("\nLimits: ldo21+ rejected; 5V boost is set-only; PMU GPIO "
-           "functions unavailable (fail-closed).\n");
+    printf("\nLimits: ldo21+ rejected; 5V boost is set-only; GPIO map is native D2207; "
+           "D2207 backlight/WLED/LCM, IDAC, and charger input-current code remain absent.\n");
 
     if (dry) {
         printf("Dry run; nothing written.\n");
